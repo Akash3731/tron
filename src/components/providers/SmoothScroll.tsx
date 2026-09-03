@@ -20,6 +20,31 @@ export default function SmoothScroll({
     window.history.scrollRestoration = "manual";
     window.scrollTo(0, 0);
 
+    const isTouchPrimary = window.matchMedia("(pointer: coarse)").matches;
+
+    if (isTouchPrimary) {
+      // ── Mobile / touch devices ──
+      // Skip Lenis entirely — it intercepts touch events and adds lerp
+      // that makes pin+scrub ScrollTrigger sluggish / non-functional.
+      // Instead, use GSAP's built-in touch normalizer (GTA 6 approach):
+      // prevents iOS rubber-banding, normalizes touch velocity, and
+      // ensures pin+scrub works reliably with native swipe gestures.
+      ScrollTrigger.normalizeScroll(true);
+      ScrollTrigger.config({ ignoreMobileResize: true });
+
+      const rafId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          ScrollTrigger.refresh();
+        });
+      });
+
+      return () => {
+        cancelAnimationFrame(rafId);
+        ScrollTrigger.normalizeScroll(false);
+      };
+    }
+
+    // ── Desktop ──
     const lenis = new Lenis({
       lerp: 0.08,
       smoothWheel: true,

@@ -109,6 +109,25 @@ export default function FrameCanvas({
     // If already loaded (cached), fire immediately
     if (video.readyState >= 2) onReady();
 
+    // Mobile browsers ignore preload="auto" — they won't fetch the video
+    // until a user gesture triggers play(). The play+pause trick satisfies
+    // the gesture requirement and forces the browser to start downloading.
+    // Without this, loadedmetadata never fires and ScrollTrigger is never
+    // created, which is why scroll-scrub was completely broken on mobile.
+    const isTouchPrimary = window.matchMedia("(pointer: coarse)").matches;
+    if (isTouchPrimary && video.readyState < 1) {
+      video
+        .play()
+        .then(() => {
+          video.pause();
+          video.currentTime = 0;
+        })
+        .catch(() => {
+          // Autoplay blocked — user will need to interact first.
+          // The poller below will catch the video once it loads.
+        });
+    }
+
     // Fallback poller — catches every race condition where events fire
     // before listeners are attached (rapid refresh, cached video, etc).
     // Runs at ~60fps for fastest possible first-frame detection.

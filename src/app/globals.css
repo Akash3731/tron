@@ -50,6 +50,11 @@
 html {
   background: #000;
   color-scheme: dark;
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
 }
 
 body {
