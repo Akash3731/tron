@@ -23,7 +23,7 @@ export default function SmoothScroll({
     const lenis = new Lenis({
       lerp: 0.08,
       smoothWheel: true,
-      syncTouch: true,
+      syncTouch: false,
     });
     lenisRef.current = lenis;
 

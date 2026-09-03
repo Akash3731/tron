@@ -269,6 +269,7 @@ export default function SplashScreen() {
   const contentRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
+  const tronTextRef = useRef<HTMLDivElement>(null);
   const charRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const fragRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [removed, setRemoved] = useState(false);
@@ -282,6 +283,22 @@ export default function SplashScreen() {
     const orangeBike = orangeBikeRef.current;
     const flash = flashRef.current;
     if (!cyanPath || !orangePath || !cyanBike || !orangeBike || !flash) return;
+
+    // Desktop: enable SVG glow filters. Skip on mobile — feGaussianBlur
+    // re-renders every frame during trail animation and kills mobile GPUs.
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) {
+      cyanPath.setAttribute("filter", "url(#glow-c)");
+      orangePath.setAttribute("filter", "url(#glow-o)");
+      cyanBike.setAttribute("filter", "url(#glow-bike)");
+      orangeBike.setAttribute("filter", "url(#glow-bike)");
+    }
+
+    // Mobile: reduce text-shadow to single layer (3 blur layers up to
+    // 80px are expensive during the scramble animation repaint cycle)
+    if (isMobile && tronTextRef.current) {
+      tronTextRef.current.style.textShadow = "0 0 10px rgba(0,212,255,0.8)";
+    }
 
     const cyanLen = cyanPath.getTotalLength();
     const orangeLen = orangePath.getTotalLength();
@@ -358,6 +375,12 @@ export default function SplashScreen() {
 
     // ── Collision particles burst (3.0s) ──
     const particleEls = particlesRef.current?.children;
+    // Desktop: add glow shadows to particles. Skip on mobile for GPU perf.
+    if (!isMobile && particleEls) {
+      Array.from(particleEls).forEach((el, i) => {
+        (el as HTMLElement).style.boxShadow = `0 0 8px ${collisionParticles[i].color}`;
+      });
+    }
     if (particleEls && particleEls.length > 0) {
       tl.fromTo(
         Array.from(particleEls),
@@ -397,7 +420,6 @@ export default function SplashScreen() {
     );
 
     // ── Subtitle (4.2s) ──
-    const isMobile = window.innerWidth < 768;
     tl.fromTo(
       subtitleRef.current,
       { opacity: 0, letterSpacing: isMobile ? "0.9em" : "1.4em" },
@@ -426,6 +448,7 @@ export default function SplashScreen() {
 
       gsap.to(content, { opacity: 0, duration: 0.12 });
       frags.forEach((f) => {
+        f.style.willChange = "transform, opacity";
         f.style.opacity = "1";
       });
 
@@ -515,7 +538,6 @@ export default function SplashScreen() {
               background: "#050508",
               border: "0.5px solid rgba(0,212,255,0.12)",
               opacity: 0,
-              willChange: "transform, opacity",
             }}
           />
         ))}
@@ -584,33 +606,31 @@ export default function SplashScreen() {
             </filter>
           </defs>
 
-          {/* Cyan trail */}
+          {/* Cyan trail — filters applied via JS on desktop only */}
           <path
             ref={cyanPathRef}
             d={PATH_CYAN}
             stroke="#00d4ff"
             strokeWidth="3.5"
             strokeLinecap="round"
-            filter="url(#glow-c)"
           />
 
-          {/* Orange trail */}
+          {/* Orange trail — filters applied via JS on desktop only */}
           <path
             ref={orangePathRef}
             d={PATH_ORANGE}
             stroke="#ff6b00"
             strokeWidth="3.5"
             strokeLinecap="round"
-            filter="url(#glow-o)"
           />
 
           {/* ── Cyan Light Cycle ── */}
-          <g ref={cyanBikeRef} opacity={0} filter="url(#glow-bike)">
+          <g ref={cyanBikeRef} opacity={0}>
             <LightCycleBike color="#00d4ff" />
           </g>
 
           {/* ── Orange Light Cycle ── */}
-          <g ref={orangeBikeRef} opacity={0} filter="url(#glow-bike)">
+          <g ref={orangeBikeRef} opacity={0}>
             <LightCycleBike color="#ff6b00" />
           </g>
         </svg>
@@ -652,7 +672,6 @@ export default function SplashScreen() {
                 height: `${p.size}px`,
                 borderRadius: "50%",
                 background: p.color,
-                boxShadow: `0 0 8px ${p.color}`,
                 opacity: 0,
               }}
             />
@@ -661,6 +680,7 @@ export default function SplashScreen() {
 
         {/* TRON text */}
         <div
+          ref={tronTextRef}
           style={{
             position: "absolute",
             top: "50%",
