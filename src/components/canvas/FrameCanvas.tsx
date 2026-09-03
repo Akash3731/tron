@@ -27,9 +27,6 @@ export default function FrameCanvas({
   const pendingTimeRef = useRef<number | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
 
-  // Draw the current video frame onto the canvas.
-  // Self-heals canvas dimensions on every call — if onReady was missed
-  // or fired before videoWidth was populated, this corrects it.
   const heroSignalledRef = useRef(false);
 
   const signalHeroReady = useCallback(() => {
@@ -39,6 +36,9 @@ export default function FrameCanvas({
     window.dispatchEvent(new CustomEvent("hero-ready"));
   }, []);
 
+  // Draw the current video frame onto the canvas.
+  // Self-heals canvas dimensions on every call — if onReady was missed
+  // or fired before videoWidth was populated, this corrects it.
   const drawFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -129,43 +129,40 @@ export default function FrameCanvas({
   }, [videoSrc, drawFrame, seekTo]);
 
   // ScrollTrigger — maps scroll progress to video time via the debounced seeker
+  // Works on all viewports — swipe gesture on mobile, scroll wheel on desktop
   useGSAP(
     () => {
-      const mm = gsap.matchMedia();
+      const video = videoRef.current;
+      if (!video) return;
 
-      mm.add("(min-width: 768px)", () => {
-        const video = videoRef.current;
-        if (!video) return;
+      const setup = () => {
+        const duration = video.duration;
+        if (!duration || !isFinite(duration)) return;
 
-        const setup = () => {
-          const duration = video.duration;
-          if (!duration || !isFinite(duration)) return;
+        ScrollTrigger.create({
+          trigger: sectionRef.current,
+          start: "top top",
+          end: scrollDistance,
+          pin: true,
+          scrub: 0.5,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            seekTo(self.progress * duration);
+          },
+        });
 
-          ScrollTrigger.create({
-            trigger: sectionRef.current,
-            start: "top top",
-            end: scrollDistance,
-            pin: true,
-            scrub: 0.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              seekTo(self.progress * duration);
-            },
-          });
+        // Pin spacer insertion shifts DOM below, so force all
+        // subsequent triggers to recalculate their positions.
+        ScrollTrigger.sort();
+        ScrollTrigger.refresh();
+      };
 
-          // Pin spacer insertion shifts DOM below, so force all
-          // subsequent triggers to recalculate their positions.
-          ScrollTrigger.sort();
-          ScrollTrigger.refresh();
-        };
-
-        if (video.readyState >= 1) {
-          setup();
-        } else {
-          video.addEventListener("loadedmetadata", setup, { once: true });
-        }
-      });
+      if (video.readyState >= 1) {
+        setup();
+      } else {
+        video.addEventListener("loadedmetadata", setup, { once: true });
+      }
     },
     { scope: sectionRef, dependencies: [videoSrc, scrollDistance, seekTo] }
   );
@@ -173,7 +170,7 @@ export default function FrameCanvas({
   return (
     <div
       ref={sectionRef}
-      className="relative w-full overflow-hidden h-[60vh] md:h-screen"
+      className="relative w-full overflow-hidden h-screen"
     >
       <video
         ref={videoRef}
@@ -181,6 +178,7 @@ export default function FrameCanvas({
         muted
         playsInline
         preload="auto"
+        crossOrigin="anonymous"
         className="absolute invisible pointer-events-none"
         aria-hidden
       />
@@ -203,7 +201,7 @@ export default function FrameCanvas({
       />
 
       {/* Bottom gradient — fades into next section */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent pointer-events-none" />
 
       {children}
     </div>

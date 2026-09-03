@@ -397,10 +397,11 @@ export default function SplashScreen() {
     );
 
     // ── Subtitle (4.2s) ──
+    const isMobile = window.innerWidth < 768;
     tl.fromTo(
       subtitleRef.current,
-      { opacity: 0, letterSpacing: "1.4em" },
-      { opacity: 1, letterSpacing: "0.6em", duration: 0.8, ease: "power2.out" },
+      { opacity: 0, letterSpacing: isMobile ? "0.9em" : "1.4em" },
+      { opacity: 1, letterSpacing: isMobile ? "0.4em" : "0.6em", duration: 0.8, ease: "power2.out" },
       4.2
     );
 
@@ -621,8 +622,8 @@ export default function SplashScreen() {
             position: "absolute",
             top: "50%",
             left: "50%",
-            width: "350px",
-            height: "350px",
+            width: "min(350px, 80vw)",
+            height: "min(350px, 80vw)",
             borderRadius: "50%",
             background:
               "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(0,212,255,0.5) 25%, rgba(255,107,0,0.35) 55%, transparent 70%)",
@@ -666,14 +667,15 @@ export default function SplashScreen() {
             left: "50%",
             transform: "translate(-50%, -50%)",
             display: "flex",
-            gap: "0.35em",
+            gap: "clamp(0.15em, 2vw, 0.35em)",
             fontFamily: "var(--font-orbitron), system-ui, sans-serif",
-            fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+            fontSize: "clamp(2rem, 6vw, 4.5rem)",
             fontWeight: 900,
-            letterSpacing: "0.5em",
+            letterSpacing: "clamp(0.2em, 3vw, 0.5em)",
             color: "#00d4ff",
             textShadow:
               "0 0 10px rgba(0,212,255,0.8), 0 0 40px rgba(0,212,255,0.4), 0 0 80px rgba(0,212,255,0.2)",
+            whiteSpace: "nowrap",
             zIndex: 5,
           }}
         >
@@ -702,12 +704,13 @@ export default function SplashScreen() {
             position: "absolute",
             top: "50%",
             left: "50%",
-            transform: "translate(-50%, calc(-50% + 65px))",
+            transform: "translate(-50%, calc(-50% + clamp(35px, 8vh, 65px)))",
             fontFamily: "var(--font-orbitron), system-ui, sans-serif",
-            fontSize: "clamp(0.6rem, 1.5vw, 0.85rem)",
+            fontSize: "clamp(0.55rem, 1.5vw, 0.85rem)",
             fontWeight: 400,
             letterSpacing: "0.6em",
             color: "rgba(0, 212, 255, 0.5)",
+            whiteSpace: "nowrap",
             opacity: 0,
             zIndex: 5,
           }}
